@@ -1,0 +1,18 @@
+{
+  "name": "relay-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local ESP32 four-relay rhythm studio with browser-side MP3/WAV analysis and piano mode",
+  "main": "server.js",
+  "scripts": {
+    "start": "npx nodemon server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

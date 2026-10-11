@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0b0d12" />
+    <title>Relay Studio — ESP32 Music Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <!-- <div class="brand-mark">
+            <span></span><span></span><span></span><span></span>
+          </div> -->
+          <div>
+            <strong>relay<span>studio</span></strong
+            ><small>ESP32 MUSIC LAB</small>
+          </div>
+        </div>
+        <div class="side-label">WORKSPACE</div>
+        <button class="nav-item active" data-view="studio">
+          <span class="nav-icon">◈</span> Music studio
+        </button>
+        <button class="nav-item" data-view="piano">
+          <span class="nav-icon">▥</span> Live piano
+        </button>
+        <button class="nav-item" data-view="channels">
+          <span class="nav-icon">◉</span> Relay channels
+        </button>
+        <div class="sidebar-bottom">
+          <div class="connection-card">
+            <div class="connection-top">
+              <span class="status-dot" id="sideDot"></span
+              ><span id="sideConnection">Waiting for ESP32</span>
+            </div>
+            <small>LOCAL NETWORK · PRIVATE</small>
+          </div>
+          <div class="safe-note">
+            <span>⌁</span>
+            <p>
+              <b>Safety limits active</b><br />Mechanical relay pacing enabled.
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">YOUR DESK / AUDIO HARDWARE</div>
+            <h1 id="pageTitle">
+              Music studio <span class="live-pill"><i></i> LOCAL</span>
+            </h1>
+          </div>
+          <div class="top-actions">
+            <div class="device-status">
+              <span class="status-dot" id="topDot"></span>
+              <div>
+                <b id="topConnection">ESP32 offline</b
+                ><small id="lastSeen">Waiting for heartbeat</small>
+              </div>
+            </div>
+            <button
+              class="icon-button stop-button"
+              id="globalStop"
+              title="Stop all relays and clear playback"
+            >
+              ■ <span>STOP ALL</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="view active" id="view-studio">
+          <div class="hero-row">
+            <div>
+              <div class="eyebrow">01 / AUDIO TO RHYTHM</div>
+              <h2>Turn a song into<br /><em>mechanical rhythm.</em></h2>
+              <p class="muted">
+                Drop in an MP3 or WAV. Relay Studio detects rhythmic onsets and
+                maps them to four relay channels.
+              </p>
+            </div>
+            <div class="hero-orb">
+              <div class="orb-core">♫</div>
+              <div class="orb-ring ring-one"></div>
+              <div class="orb-ring ring-two"></div>
+              <div class="orb-ring ring-three"></div>
+            </div>
+          </div>
+          <div class="studio-grid">
+            <section class="panel upload-panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">TRACK INPUT</span>
+                  <h3>Song source</h3>
+                </div>
+                <span class="tag">MP3 / WAV</span>
+              </div>
+              <label class="dropzone" id="dropzone" for="songFile"
+                ><div class="upload-icon">↑</div>
+                <b>Drop your audio here</b><span>or <u>browse files</u></span
+                ><small
+                  >Processed locally in your browser · max 10 minutes</small
+                ><input
+                  id="songFile"
+                  type="file"
+                  accept="audio/mpeg,audio/wav,audio/x-wav,.mp3,.wav"
+              /></label>
+              <div class="track-meta hidden" id="trackMeta">
+                <div class="track-art">♫</div>
+                <div class="track-info">
+                  <b id="trackName">No track loaded</b
+                  ><small id="trackDetails">—</small>
+                </div>
+                <button class="text-button" id="removeTrack">Remove</button>
+              </div>
+              <div class="analysis-row">
+                <div>
+                  <span class="mini-label">RHYTHM ANALYSIS</span
+                  ><b id="analysisStatus">Waiting for a track</b>
+                </div>
+                <button class="button secondary" id="analyzeBtn" disabled>
+                  Analyze rhythm <span>↗</span>
+                </button>
+              </div>
+              <div class="progress-track">
+                <div id="analysisProgress"></div>
+              </div>
+              <div class="wave-wrap">
+                <canvas id="waveform" width="800" height="120"></canvas>
+                <div class="wave-empty" id="waveEmpty">
+                  Your waveform appears here
+                </div>
+              </div>
+              <div class="transport">
+                <button class="play-button" id="playBtn" disabled>▶</button>
+                <div class="time-block">
+                  <div class="time-labels">
+                    <span id="currentTime">00:00</span
+                    ><span id="totalTime">00:00</span>
+                  </div>
+                  <input
+                    type="range"
+                    id="seekBar"
+                    min="0"
+                    max="1000"
+                    value="0"
+                    disabled
+                  />
+                </div>
+                <button class="button secondary" id="stopSongBtn" disabled>
+                  Stop
+                </button>
+              </div>
+              <audio id="audio" preload="metadata"></audio>
+            </section>
+            <section class="panel mapping-panel">
+              <div class="panel-head">
+                <div>
+                  <span class="eyebrow">SIGNAL ROUTING</span>
+                  <h3>Rhythm engine</h3>
+                </div>
+                <span class="live-chip"><i></i> READY</span>
+              </div>
+              <div class="metric-grid">
+                <div class="metric">
+                  <small>ONSETS FOUND</small><strong id="onsetCount">—</strong>
+                </div>
+                <div class="metric">
+                  <small>EST. BPM</small><strong id="bpmValue">—</strong>
+                </div>
+                <div class="metric">
+                  <small>EVENTS QUEUED</small><strong id="eventCount">—</strong>
+                </div>
+              </div>
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Click strength</span><b id="strengthValue">Medium</b>
+                </div>
+                <input
+                  type="range"
+                  id="strength"
+                  min="80"
+                  max="200"
+                  value="110"
+                />
+                <div class="range-ends">
+                  <span>Shorter click</span><span>Longer click</span>
+                </div>
+              </div>
+              <div class="control-group">
+                <div class="control-label">
+                  <span>Rhythm sensitivity</span
+                  ><b id="sensitivityValue">Balanced</b>
+                </div>
+                <input
+                  type="range"
+                  id="sensitivity"
+                  min="1"
+                  max="5"
+                  value="3"
+                />
+                <div class="range-ends">
+                  <span>Only strong beats</span><span>More events</span>
+                </div>
+              </div>
+              <div class="relay-preview" id="relayPreview">
+                <div class="preview-title">
+                  <span>CHANNEL MAP</span><small>Energy → relay pattern</small>
+                </div>
+                <div class="preview-channels">
+                  <div class="preview-channel c-red">
+                    <i></i><span>R1</span>
+                  </div>
+                  <div class="preview-channel c-blue">
+                    <i></i><span>R2</span>
+                  </div>
+                  <div class="preview-channel c-green">
+                    <i></i><span>R3</span>
+                  </div>
+                  <div class="preview-channel c-amber">
+                    <i></i><span>R4</span>
+                  </div>
+                </div>
+                <p>
+                  Clicks are percussive only. Relays cannot reproduce musical
+                  pitch.
+                </p>
+              </div>
+              <button class="button primary full" id="playRelaysBtn" disabled>
+                ▶ &nbsp; Play song with relays
+              </button>
+              <p class="fine-print">
+                Audio plays through your laptop. The ESP32 receives timed relay
+                events over your local Wi-Fi.
+              </p>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-piano">
+          <div class="section-intro">
+            <div class="eyebrow">02 / REAL-TIME PERFORMANCE</div>
+            <h2>Click keys.<br /><em>Hear the hardware.</em></h2>
+            <p class="muted">
+              Press a key or use your computer keyboard. Notes are mapped to
+              relay combinations, not pitched sounds.
+            </p>
+          </div>
+          <div class="panel piano-panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">LIVE INPUT</span>
+                <h3>Relay piano</h3>
+              </div>
+              <span class="tag">LOW-LATENCY LAN</span>
+            </div>
+            <div class="piano-status">
+              <div>
+                <span class="status-dot" id="pianoDot"></span
+                ><b id="pianoStatus">Connect ESP32 to play</b>
+              </div>
+              <span class="muted small">Computer keys: A S D F G H J K</span>
+            </div>
+            <div class="piano-keys" id="pianoKeys"></div>
+            <div class="key-legend">
+              <span><i class="legend-white"></i> Main keys</span
+              ><span><i class="legend-black"></i> Extra combinations</span
+              ><span class="muted"
+                >Hold a key to energize; release to switch off.</span
+              >
+            </div>
+            <div class="piano-controls">
+              <div>
+                <span class="mini-label">KEY CLICK DURATION</span
+                ><input
+                  type="range"
+                  id="pianoDuration"
+                  min="120"
+                  max="300"
+                  value="160"
+                /><small id="pianoDurationValue">160 ms minimum hold</small>
+              </div>
+              <button class="button secondary" id="pianoAllOff">
+                All relays off
+              </button>
+            </div>
+          </div>
+          <div class="warning-banner">
+            <span>!</span>
+            <div>
+              <b>Mechanical relay reminder</b>
+              <p>
+                Don't use this as a conventional piano sound generator.
+                Mechanical relays are slow, noisy and wear out with every
+                switching cycle. The firmware limits rapid switching to protect
+                them.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-channels">
+          <div class="section-intro">
+            <div class="eyebrow">03 / HARDWARE CONTROL</div>
+            <h2>Four channels.<br /><em>One control room.</em></h2>
+            <p class="muted">
+              Manually pulse each relay for a quick test. All channels default
+              to OFF after ESP32 boot or communication loss.
+            </p>
+          </div>
+          <div class="channel-grid" id="channelGrid"></div>
+          <div class="panel channel-foot">
+            <div>
+              <span class="mini-label">DEVICE LINK</span
+              ><b id="channelLink">Not connected</b
+              ><small id="channelAddress"
+                >Set the laptop's LAN IP in the ESP32 firmware.</small
+              >
+            </div>
+            <button class="button secondary" id="refreshStatus">
+              Refresh status ↻
+            </button>
+          </div>
+          <div class="warning-banner">
+            <span>!</span>
+            <div>
+              <b>Low-voltage control only</b>
+              <p>
+                This dashboard is intended for a properly rated relay module on
+                its low-voltage control side. Don't switch mains wiring unless
+                you are qualified and using an enclosed, correctly rated
+                assembly.
+              </p>
+            </div>
+          </div>
+        </section>
+        <footer>
+          <span>RELAY STUDIO <b>v1.0.0</b></span
+          ><span>LOCAL-FIRST · NO CLOUD · NO PAID API</span>
+        </footer>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
